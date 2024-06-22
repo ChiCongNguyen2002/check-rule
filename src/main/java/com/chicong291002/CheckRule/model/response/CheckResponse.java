@@ -10,7 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CheckResponse {
-    private Long userId;
-    private Long ruleId;
+    private Integer userId;
+    private Integer ruleId;
     private boolean pass;
 }

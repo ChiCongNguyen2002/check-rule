@@ -11,13 +11,13 @@ public class CounterController {
     @Autowired
     private CounterService counterService;
 
-    @GetMapping("/check")
-    public ResponseEntity<?> checkCounter(@RequestParam Long userId, @RequestParam Long ruleId) {
-        boolean pass = counterService.checkCounter(userId, ruleId);
-        return ResponseEntity.ok(new CheckResponse(userId, ruleId, pass));
+    @GetMapping("/checkCounter")
+    public ResponseEntity<?> checkCounter(@RequestBody CheckRequest request) {
+        boolean pass = counterService.checkCounter(request.getUserId(), request.getRuleId());
+        return ResponseEntity.ok(new CheckResponse(request.getUserId(), request.getRuleId(), pass));
     }
 
-    @PostMapping("/checkAndUpdate")
+    @PostMapping("/checkAndUpdateCounter")
     public ResponseEntity<?> checkAndUpdateCounter(@RequestBody CheckRequest request) {
         boolean pass = counterService.checkAndUpdateCounter(request.getUserId(), request.getRuleId());
         return ResponseEntity.ok(new CheckResponse(request.getUserId(), request.getRuleId(), pass));

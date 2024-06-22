@@ -1,8 +1,7 @@
 package com.chicong291002.CheckRule.service.impl;
 
-import com.chicong291002.CheckRule.model.Counter;
+import com.chicong291002.CheckRule.model.CounterData;
 import com.chicong291002.CheckRule.model.Rule;
-import com.chicong291002.CheckRule.model.User;
 import com.chicong291002.CheckRule.repository.CounterRepository;
 import com.chicong291002.CheckRule.repository.RuleRepository;
 import com.chicong291002.CheckRule.repository.UserRepository;
@@ -11,59 +10,47 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-
 @Service
 public class CounterServiceImpl implements CounterService {
     @Autowired
     private CounterRepository counterRepository;
-
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
     private RuleRepository ruleRepository;
 
     @Override
-    @Transactional
-    public boolean checkCounter(Long userId, Long ruleId) {
-        User user = userRepository.findById(userId).orElse(null);
-        Rule rule = ruleRepository.findById(ruleId).orElse(null);
-        if (user != null && rule != null) {
-            List<Counter> counters = counterRepository.findByRuleAndUserWithLock(rule, user);
-            for (Counter counter : counters) {
-                if (counter.getCount() >= counter.getLimit()) {
-                    return false;
-                }
+    public boolean checkCounter(Integer userId, Integer ruleId) {
+        Rule rule = ruleRepository.findById(ruleId).orElseThrow(() -> new RuntimeException("Rule not found"));
+        for(CounterData counterData : rule.getCounterDataList()){
+            boolean checkLimit = counterRepository.existsLimitExceeded(userId,ruleId,counterData.getLimitValue());
+            if (checkLimit) {
+                return false;
             }
-            return true;
         }
-        return false;
+        return true;
     }
 
     @Override
     @Transactional
-    public boolean checkAndUpdateCounter(Long userId, Long ruleId) {
-        User user = userRepository.findById(userId).orElse(null);
-        Rule rule = ruleRepository.findById(ruleId).orElse(null);
-        if (user != null && rule != null) {
-            List<Counter> counters = counterRepository.findByRuleAndUserWithLock(rule, user);
-            int totalCount = counters.stream().mapToInt(Counter::getCount).sum();
-            int totalLimit = counters.stream().mapToInt(Counter::getLimit).sum();
+    public boolean checkAndUpdateCounter(Integer userId, Integer ruleId) {
+        Rule rule = ruleRepository.findById(ruleId).orElseThrow(() -> new RuntimeException("Rule not found"));
 
-            if (totalCount >= totalLimit) {
+        for(CounterData counterData : rule.getCounterDataList()){
+            boolean checkLimit = counterRepository.existsLimitExceeded(userId,ruleId,counterData.getLimitValue());
+            if (checkLimit) {
                 return false;
             }
-
-            for (Counter counter : counters) {
-                if (counter.getCount() < counter.getLimit()) {
-                    counter.setCount(counter.getCount() + 1);
-                    counterRepository.save(counter);
-                    return true;
-                }
-            }
         }
-        return false;
+
+        // Use pessimistic locking to ensure consistency
+        counterRepository.findByRuleIdAndUserIdForUpdate(userId, ruleId);
+
+        // Use insert on duplicate key update
+        for (CounterData counterData : rule.getCounterDataList()) {
+            counterRepository.upsertCounter(ruleId, userId, counterData.getCounterKey());
+        }
+
+        return true;
     }
 }

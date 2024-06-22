@@ -9,6 +9,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CheckRequest {
-    private Long userId;
-    private Long ruleId;
+    private Integer userId;
+    private Integer ruleId;
 }

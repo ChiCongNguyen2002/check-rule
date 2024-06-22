@@ -14,15 +14,21 @@ import lombok.Setter;
 public class Counter {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long counterId;
-    private int count;
-    private int limit;
+
+    @Column(name = "counter_id")
+    private int counterId;
+
+    @Column(name = "counter_name")
+    private String counterName;
+
+    @Column(name = "counter_value")
+    private int counterValue;
 
     @ManyToOne
-    @JoinColumn(name = "userId")
-    private User user;
+    @JoinColumn(name = "user_id")
+    private Users user;
 
     @ManyToOne
-    @JoinColumn(name = "ruleId")
+    @JoinColumn(name = "rule_id")
     private Rule rule;
 }
